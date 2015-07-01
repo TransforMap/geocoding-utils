@@ -3,6 +3,7 @@
 # written by Michael Maier (s.8472@aon.at)
 # 
 # 05.11.2013   - intial release
+# Wed  1 Jul 16:08:07 CEST 2015 - update for TransforMap
 #
 
 # This program is free software; you can redistribute it and/or
