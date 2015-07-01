@@ -158,9 +158,10 @@ do
     details_contents=$(wget -q "$nominatim_addr?street=$housenumber$street&city=$city&countrycodes=$country&format=xml&addressdetails=1&email=s.8472@aon.at" -O - | sed -e 's/></>\n</g')
     #echo "$details_contents"
     length=$(echo "$details_contents"|grep "^<place"|wc -l)
-    #echo "$details_contents"|grep "^<place"
+    echo "$details_contents"|grep "^<place"
     class=$(echo "$details_contents"|grep "^<place"|sed -e "s/^.*class='//" -e "s/' type=.*$//" |sort|uniq|sed -e ':a;N;$!ba;s/\n/; /g')
-    osm_type=$(echo "$details_contents"|grep -m 1 "^<place"|grep -o "osm_type='[0-9.]*'"|grep -o "[a-z]*")
+    osm_type=$(echo "$details_contents"|grep -m 1 "^<place"|grep -o "osm_type='[a-z]*"|sed -e "s/^osm_type='//")
+    echo "type: $osm_type"
 
     #echo "l: „$length”"
     if [ "$class" = "" ] && [ "$length" != "0" ]; then
@@ -182,7 +183,7 @@ do
         class="exact"
     fi
     fi
-    fi #where is first??
+    fi 
 
     echo "$class" >> $quality_column
 
