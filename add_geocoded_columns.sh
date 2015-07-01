@@ -45,9 +45,6 @@ fi
 #nominatim_columns_folder="nominatim-columns/" #there are files *.ncolumn, with name like the column from nominatim and the target csv column as file content
 #nominatim_columns_folder_entries=$(cd $nominatim_columns_folder; ls *ncolumn; cd ..)
 
-#nominatim_call='wget "http://144.76.165.238/nominatim/reverse?format=json&osm_type=$OSM_OBJECT_TYPE&zoom=18&addressdetails=1&osm_id=$OSM_ID" -O -'
-
-nominatim_addr="http://144.76.165.238/nominatim/"
 nominatim_addr="http://nominatim.openstreetmap.org/search"
 nominatim_format="xml"
 
@@ -143,7 +140,6 @@ do
     # output parsen, 
     # * es können mehrere sein!
     # in neue datei schreiben, zum schluss hinpasten
-    # http://144.76.165.238/nominatim/?street=37%20Lindenschmitstra%C3%9Fe&city=M%C3%BCnchen&format=xml&addressdetails=1
     country=$(echo "$line"| cut -f $country_column)
     city=$(echo "$line"| cut -f $city_column)
     postcode=$(echo "$line"| cut -f $postcode_column)
@@ -156,8 +152,7 @@ do
     #echo -n "city: $city, postcode: $postcode, street: $street, housenumber: $housenumber. "
 
 
-    # with postcodes - we get less results
-    #details_contents=$(wget -q "http://144.76.165.238/nominatim/?street=$housenumber$street&city=$city&countrycodes=$country&postalcode=$postcode&format=xml&addressdetails=1" -O - | sed -e 's/></>\n</g')
+    # with postcodes we get less results, omit.
 
     details_contents=$(wget -q "$nominatim_addr?street=$housenumber$street&city=$city&countrycodes=$country&format=xml&addressdetails=1&email=s.8472@aon.at" -O - | sed -e 's/></>\n</g')
     #echo "$details_contents"
