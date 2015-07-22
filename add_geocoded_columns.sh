@@ -72,6 +72,10 @@ line_counter=0
 line_counter=0
 actual_percentage=0
 
+# Problem: when in a field a user has written an <enter>, reading file line per line gets scrambled...
+# only files without enters in text cells can be used!
+# Tip: in OpenOffice, search&replace: CTRL-H, Search for: \n, replace with: \\n, MUST use other options: Regular expression
+
 while read -r line
 do
  #   echo "line: $line"
@@ -87,48 +91,36 @@ do
     if [ "$firstline_passed" = "0" ]; then
         header="$line"
         echo $header
+        nr_of_cols=$(echo "$header"| grep -P '\t' -o |wc -l)+1
+        echo "nr_of_cols: $nr_of_cols"
 
-        counter=1
-        for item in $header; do
+        # FIXME if header columns contain space, counters are garbage...
+
+        housenumber_column="notfound"
+        for (( counter=1; counter <= nr_of_cols; counter++ )); do
+            item=$(echo "$header"|cut -f $counter)
+            item=$(echo "$item"|sed 's/"//g')
+            echo "$item"
             if [ "$item" = "housenumber" ]; then
                 housenumber_column=$counter
-                break
             fi
-            let counter=$counter+1
-        done
-        counter=1
-        for item in $header; do
             if [ "$item" = "street" ]; then
                 street_column=$counter
-                break
             fi
-            let counter=$counter+1
-        done
-        counter=1
-        for item in $header; do
             if [ "$item" = "postcode" ]; then
                 postcode_column=$counter
-                break
             fi
-            let counter=$counter+1
-        done
-        counter=1
-        for item in $header; do
+            if [ "$item" = "state" ]; then
+                state_column=$counter
+            fi
             if [ "$item" = "city" ]; then
                 city_column=$counter
-                break
             fi
-            let counter=$counter+1
-        done
-        counter=1
-        for item in $header; do
             if [ "$item" = "country" ]; then
                 country_column=$counter
-                break
             fi
-            let counter=$counter+1
         done
-        echo "Found at columns: city: $city_column, postcode: $postcode_column, street: $street_column, housenumber: $housenumber_column."
+        echo "Found at columns: city: $city_column, postcode: $postcode_column, street: $street_column, housenumber: $housenumber_column, state: $state_column, country: $country_column."
 
         firstline_passed=1
         echo "note" > $quality_column
@@ -141,11 +133,16 @@ do
     # output parsen, 
     # * es können mehrere sein!
     # in neue datei schreiben, zum schluss hinpasten
-    country=$(echo "$line"| cut -f $country_column)
-    city=$(echo "$line"| cut -f $city_column)
-    postcode=$(echo "$line"| cut -f $postcode_column)
+    country="&countrycodes=$(echo "$line"| cut -f $country_column)"
+    city="&city=$(echo "$line"| cut -f $city_column)"
+    #postcode=$(echo "$line"| cut -f $postcode_column)
     street=$(echo "$line"| cut -f $street_column)
-    housenumber=$(echo "$line"| cut -f $housenumber_column)
+    if [ "$housenumber_column" != "notfound" ]; then
+      housenumber=$(echo "$line"| cut -f $housenumber_column)
+    fi
+    if [ "$state_column" ]; then
+      state="&state=$(echo "$line"| cut -f $state_column)"
+    fi
     # must be inserted before street in nominatim call with a space
     if [ "$housenumber" ];then
         housenumber="$housenumber%20"
@@ -155,8 +152,9 @@ do
 
     # with postcodes we get less results, omit.
 
-    details_contents=$(wget -q "$nominatim_addr?street=$housenumber$street&city=$city&countrycodes=$country&format=xml&addressdetails=1&email=s.8472@aon.at" -O - | sed -e 's/></>\n</g')
+    details_contents=$(wget -q "$nominatim_addr?street=$housenumber$street$city$country$state&format=xml&addressdetails=1&email=s.8472@aon.at" -O - | sed -e 's/></>\n</g')
     #echo "$details_contents"
+    echo "obj call: street=$housenumber$street$city$country$state"
     length=$(echo "$details_contents"|grep "^<place"|wc -l)
     echo "$details_contents"|grep "^<place"
     class=$(echo "$details_contents"|grep "^<place"|sed -e "s/^.*class='//" -e "s/' type=.*$//" |sort|uniq|sed -e ':a;N;$!ba;s/\n/; /g')
@@ -187,8 +185,8 @@ do
 
     echo "$class" >> $quality_column
 
-    lat=$(echo "$details_contents"|grep -m 1 "^<place"|grep -o "lat='[0-9.]*'"|grep -o "[0-9.]*")
-    lon=$(echo "$details_contents"|grep -m 1 "^<place"|grep -o "lon='[0-9.]*'"|grep -o "[0-9.]*")
+    lat=$(echo "$details_contents"|grep -m 1 "^<place"|grep -o "lat='[0-9.-]*'"|grep -o "[0-9.-]*")
+    lon=$(echo "$details_contents"|grep -m 1 "^<place"|grep -o "lon='[0-9.-]*'"|grep -o "[0-9.-]*")
     echo "$lat" >> $lat_column
     echo "$lon" >> $lon_column
 
