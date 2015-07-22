@@ -22,10 +22,22 @@ Usage: $0 filename [OPTIONS]
 $0 is a program to add addr infos via nominatim to osm data in csv format
   - actually it has to be tab-separated. 
   The following columns have to be present:
-  • housenumber
-  • street
   • city
+  • street
+  • housenumber (or street has the format 'nr street'
   • country (as 2-letter-code)
+
+Workflow for new csv's:
+  • open in spreadsheet software
+    · remove enters in cells: search&replace: CTRL-H, Search for: \n, replace with: \\n, MUST use other options: Regular expression
+  • save as csv, with TAB as separator
+  • run this program
+  • open in spreadsheet software
+    · check if all rows could be geocoded
+    · rename the new lat/lon columns to "Latitude" and "Longitude", save as csv WITH "," AS SEPARATOR
+    · (eventually replace all \\\\n with \\n), save as quoted text
+  • open in JOSM, happy importing ☺
+
 
 OPTIONS:
    -h -help --help     this help text
@@ -52,13 +64,13 @@ nominatim_format="xml"
 #csv-file-format: first line header: @id, @lon, @lat, some addr:* - these are the ones we are interested.
 
 filename="$1"
-new_filename=$filename.new
+new_filename="$filename.new"
 
 quality_column="$filename.qual-column"
 lat_column="$filename.lat-column"
 lon_column="$filename.lon-column"
 
-nr_of_lines=$(wc -l $filename|cut -f 1 -d" ")
+nr_of_lines=$(wc -l "$filename"|cut -f 1 -d" ")
 let percentage=$nr_of_lines/100
 
 ###
@@ -123,9 +135,9 @@ do
         echo "Found at columns: city: $city_column, postcode: $postcode_column, street: $street_column, housenumber: $housenumber_column, state: $state_column, country: $country_column."
 
         firstline_passed=1
-        echo "note" > $quality_column
-        echo "lat" > $lat_column
-        echo "lon" > $lon_column
+        echo "note" > "$quality_column"
+        echo "lat" > "$lat_column"
+        echo "lon" > "$lon_column"
         continue
     fi
 
@@ -183,17 +195,17 @@ do
     fi
     fi 
 
-    echo "$class" >> $quality_column
+    echo "$class" >> "$quality_column"
 
     lat=$(echo "$details_contents"|grep -m 1 "^<place"|grep -o "lat='[0-9.-]*'"|grep -o "[0-9.-]*")
     lon=$(echo "$details_contents"|grep -m 1 "^<place"|grep -o "lon='[0-9.-]*'"|grep -o "[0-9.-]*")
-    echo "$lat" >> $lat_column
-    echo "$lon" >> $lon_column
+    echo "$lat" >> "$lat_column"
+    echo "$lon" >> "$lon_column"
 
 done < "$filename"
 
-paste $filename $lat_column $lon_column $quality_column > $filename.new
-rm $lat_column $lon_column $quality_column
+paste "$filename" "$lat_column" "$lon_column" "$quality_column" > "$filename.new"
+rm "$lat_column" "$lon_column" "$quality_column"
 
 exit
 
