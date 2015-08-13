@@ -63,17 +63,14 @@ fi
 #nominatim_columns_folder_entries=$(cd $nominatim_columns_folder; ls *ncolumn; cd ..)
 
 nominatim_addr="http://nominatim.openstreetmap.org/search"
-nominatim_format="xml"
 
 #csv-file-format: first line header: @id, @lon, @lat, some addr:* - these are the ones we are interested.
 
 filename="$1"
-new_filename="$filename.new"
 
-osm_roadname_column="$filename.road-column"
-quality_column="$filename.qual-column"
-lat_column="$filename.lat-column"
-lon_column="$filename.lon-column"
+outfile_not="${filename%%.csv}.unsuccessful.csv"
+outfile_road="${filename%%.csv}.onlyroad.csv"
+outfile_exact="${filename%%.csv}.exactgeocoded.csv"
 
 nr_of_lines=$(wc -l "$filename"|cut -f 1 -d" ")
 let percentage=$nr_of_lines/100
@@ -102,6 +99,8 @@ do
         let actual_percentage=$actual_percentage+1
         echo "actual_percentage=$actual_percentage %"
     fi
+
+    csvline=$(echo "$line"|sed -e 's/^/"/; s/$/"/; s/\t/","/g; s/; /;/g;') # tabs to comma, quote all; remove the " " after ;
 
     #extract street, h-nr, city, 
     #first line is header
@@ -140,10 +139,12 @@ do
         echo "Found at columns: city: $city_column, postcode: $postcode_column, street: $street_column, housenumber: $housenumber_column, state: $state_column, country: $country_column."
 
         firstline_passed=1
-        echo "addr:street" > "$osm_roadname_column"
-        echo "note" > "$quality_column"
-        echo "lat" > "$lat_column"
-        echo "lon" > "$lon_column"
+
+        headerline=$(echo "$csvline"|sed 's/addr:street/addr:orig_street/')
+        new_line="$headerline,lat,lon,addr:street,place"
+        echo "$new_line" > "$outfile_exact"
+        echo "$new_line" > "$outfile_road"
+        echo "$new_line" > "$outfile_not"
         continue
     fi
 
@@ -193,31 +194,25 @@ do
         echo "ERROR: $details_contents"
         echo
     fi
+
+    lat=$(echo "$details_contents"|grep -m 1 "^<place"|grep -o "lat='[0-9.-]*'"|grep -o "[0-9.-]*")
+    lon=$(echo "$details_contents"|grep -m 1 "^<place"|grep -o "lon='[0-9.-]*'"|grep -o "[0-9.-]*")
+
+    new_line="$csvline,$lat,$lon,\"$osm_roadname\""
+
     if [ "$class" = "highway" ]; then 
-        class="Information only from road"
-    else if [ "$class" = "place" ] && [ "$osm_type" = "way" ]; then
-        class="interpolation"
+        echo "Information only from road"
+        echo "$new_line,town" >> "$outfile_road" # place=town colors red
+    else if [ "$class" = "place" ] && [ "$osm_type" = "way" ]; then #interpolation
+        echo "$new_line,village" >> "$outfile_road" # place=village colors orange
     else if [ "$class" != "unknown in osm" ]; then
-        class="exact"
+        echo "$new_line,isolated_dwelling" >> "$outfile_exact" # place=isolated_dwelling colors green
+    else
+        echo "$new_line" >> "$outfile_not"
     fi
     fi
     fi 
 
-    echo "$class" >> "$quality_column"
-
-    lat=$(echo "$details_contents"|grep -m 1 "^<place"|grep -o "lat='[0-9.-]*'"|grep -o "[0-9.-]*")
-    lon=$(echo "$details_contents"|grep -m 1 "^<place"|grep -o "lon='[0-9.-]*'"|grep -o "[0-9.-]*")
-    echo "$lat" >> "$lat_column"
-    echo "$lon" >> "$lon_column"
-
-    echo "$osm_roadname" >> "$osm_roadname_column"
-
 done < "$filename"
-
-paste "$filename" "$lat_column" "$lon_column" "$quality_column" "$osm_roadname_column" > "${filename%%.csv}.new.csv"
-sed -i 's/addr:street/addr:orig_street/' "${filename%%.csv}.new.csv" # replaces only the first appearance
-rm "$lat_column" "$lon_column" "$quality_column"
-sed -e 's/^/"/; s/$/"/; s/\t/","/g;' -i "${filename%%.csv}.new.csv"
-sed -e 's/; /;/' -i "${filename%%.csv}.new.csv" # columns that have ";"-separated tag values, remove the " " after ; ...
 
 exit
