@@ -37,6 +37,10 @@ Workflow for new csv's:
     · rename the new lat/lon columns to "Latitude" and "Longitude", save as csv WITH "," AS SEPARATOR
     · (eventually replace all \\\\n with \\n), save as quoted text
   • open in JOSM, happy importing ☺
+    · click on an item containing note=exact, rightclick on Tag, search Key/Value
+      for all items, add "place=isolated_dwelling" (is then visible green over all zoomlevels)
+    · click on an item containing note="information only from road", rightclick on Tag, search Key/Value
+      for all items, add "place=town" (is then visible red over all zoomlevels)
 
 
 OPTIONS:
@@ -66,6 +70,7 @@ nominatim_format="xml"
 filename="$1"
 new_filename="$filename.new"
 
+osm_roadname_column="$filename.road-column"
 quality_column="$filename.qual-column"
 lat_column="$filename.lat-column"
 lon_column="$filename.lon-column"
@@ -113,28 +118,29 @@ do
             item=$(echo "$header"|cut -f $counter)
             item=$(echo "$item"|sed 's/"//g')
             echo "$item"
-            if [ "$item" = "housenumber" ]; then
+            if [ "$item" = "addr:housenumber" ]; then
                 housenumber_column=$counter
             fi
-            if [ "$item" = "street" ]; then
+            if [ "$item" = "addr:street" ]; then
                 street_column=$counter
             fi
-            if [ "$item" = "postcode" ]; then
+            if [ "$item" = "addr:postcode" ]; then
                 postcode_column=$counter
             fi
-            if [ "$item" = "state" ]; then
+            if [ "$item" = "addr:state" ]; then
                 state_column=$counter
             fi
-            if [ "$item" = "city" ]; then
+            if [ "$item" = "addr:city" ]; then
                 city_column=$counter
             fi
-            if [ "$item" = "country" ]; then
+            if [ "$item" = "addr:country" ]; then
                 country_column=$counter
             fi
         done
         echo "Found at columns: city: $city_column, postcode: $postcode_column, street: $street_column, housenumber: $housenumber_column, state: $state_column, country: $country_column."
 
         firstline_passed=1
+        echo "addr:street" > "$osm_roadname_column"
         echo "note" > "$quality_column"
         echo "lat" > "$lat_column"
         echo "lon" > "$lon_column"
@@ -168,8 +174,10 @@ do
     #echo "$details_contents"
     echo "obj call: street=$housenumber$street$city$country$state"
     length=$(echo "$details_contents"|grep "^<place"|wc -l)
-    echo "$details_contents"|grep "^<place"
+    #echo "$details_contents"|grep "^<place"
+    echo "$details_contents"
     class=$(echo "$details_contents"|grep "^<place"|sed -e "s/^.*class='//" -e "s/' type=.*$//" |sort|uniq|sed -e ':a;N;$!ba;s/\n/; /g')
+    osm_roadname=$(echo "$details_contents"|grep "^<road>"|sed -e 's/<[\/]*road>//g'|sort|uniq|sed -n -e 'H; ${x; s/\n/;/g; s/^;//; p;}') #replaces newlines with ;
     osm_type=$(echo "$details_contents"|grep -m 1 "^<place"|grep -o "osm_type='[a-z]*"|sed -e "s/^osm_type='//")
     echo "type: $osm_type"
 
@@ -202,10 +210,14 @@ do
     echo "$lat" >> "$lat_column"
     echo "$lon" >> "$lon_column"
 
+    echo "$osm_roadname" >> "$osm_roadname_column"
+
 done < "$filename"
 
-paste "$filename" "$lat_column" "$lon_column" "$quality_column" > "$filename.new"
+paste "$filename" "$lat_column" "$lon_column" "$quality_column" "$osm_roadname_column" > "${filename%%.csv}.new.csv"
+sed -i 's/addr:street/addr:orig_street/' "${filename%%.csv}.new.csv" # replaces only the first appearance
 rm "$lat_column" "$lon_column" "$quality_column"
+sed -e 's/^/"/; s/$/"/; s/\t/","/g;' -i "${filename%%.csv}.new.csv"
+sed -e 's/; /;/' -i "${filename%%.csv}.new.csv" # columns that have ";"-separated tag values, remove the " " after ; ...
 
 exit
-
