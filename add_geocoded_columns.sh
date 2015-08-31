@@ -37,10 +37,14 @@ Workflow for new csv's:
     · rename the new lat/lon columns to "Latitude" and "Longitude", save as csv WITH "," AS SEPARATOR
     · (eventually replace all \\\\n with \\n), save as quoted text
   • open in JOSM, happy importing ☺
-    · click on an item containing note=exact, rightclick on Tag, search Key/Value
-      for all items, add "place=isolated_dwelling" (is then visible green over all zoomlevels)
-    · click on an item containing note="information only from road", rightclick on Tag, search Key/Value
-      for all items, add "place=town" (is then visible red over all zoomlevels)
+    · don't forget to remove the place=* used for visualizing^^
+
+  for the onlyroad.csv, import into a new umap, save, send the link to the partner
+    when partner is ready,
+      export as geojson from umap
+      import into QGIS - or http://www.onlinejsonconvert.com/geojson-csv.php
+      export as csv
+      open in JOSM
 
 
 OPTIONS:
@@ -214,5 +218,9 @@ do
     fi 
 
 done < "$filename"
+
+# TODO
+# if some lines do not have the according amount of cells (empty?), added cells shift left...
+
 
 exit
