@@ -1,0 +1,3 @@
+"addr:orig_street","addr:housenumber","addr:postcode","addr:city","addr:country",lat,lon,addr:street,place
+"Südtiroler Platz","2","8020","Graz","at",47.0710224,15.4340947,"",isolated_dwelling
+"Wienerstraße","212","8020","Graz","at",47.0905511,15.4089868,"Wiener Straße",isolated_dwelling

@@ -1,4 +1,4 @@
-street	housenumber	postcode	city	country
+addr:street	addr:housenumber	addr:postcode	addr:city	addr:country
 dr.-pfanner-straße	5	8770	st.michael in obersteiermark	at
 dr.-pfanner-straße	5	8770	St. Michael	at
 Südtiroler Platz	2	8020	Graz	at

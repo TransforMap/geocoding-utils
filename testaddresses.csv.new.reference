@@ -1,8 +1,0 @@
-street	housenumber	postcode	city	country	lat	lon	note
-dr.-pfanner-straße	5	8770	st.michael in obersteiermark	at	47.3399888	15.0176763	Information only from road
-dr.-pfanner-straße	5	8770	St. Michael	at	47.3399888	15.0176763	Information only from road
-Südtiroler Platz	2	8020	Graz	at	47.0710224	15.4340947	exact
-Wienerstraße	212	8020	Graz	at	47.0905511	15.4089868	exact
-dr.-pfaffner-straße	5	8770	St. Michael	at			unknown in osm
-Karl-löwe-gasse	41		Wien	at	48.17674862	16.3356613	interpolation
-Steinackergasse	11		Wien	at	48.1770121	16.3365797	Information only from road
