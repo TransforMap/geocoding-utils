@@ -7,10 +7,10 @@ Skript to bulk geocode an input file.
 
 The input file (csv-file) must be tab-separated, with the first line being a header bearing the following column names:
 
-* housenumber
-* street
-* city
-* country (as 2-letter-code)
+* addr:housenumber
+* addr:street
+* addr:city
+* addr:country (as 2-letter-code)
 
 The fields must not be empty!
 It is advised to create an input file with export from e.g. libreoffice calc:
@@ -23,6 +23,12 @@ It is advised to create an input file with export from e.g. libreoffice calc:
  * Field delimiter: {Tab}
 * OK
 
-look here for an example input file: testaddresses.csv
+look here for an example input file: 
+  testaddresses.csv
 
-look here for an example output file: testaddresses.csv.new.reference
+It generates 3 output files.
+
+look here for an example output files: 
+  testaddresses.exactgeocoded.csv.new.reference
+  testaddresses.onlyroad.csv.new.reference
+  testaddresses.unsuccessful.csv.new.reference
