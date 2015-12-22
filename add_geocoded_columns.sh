@@ -30,6 +30,7 @@ $0 is a program to add addr infos via nominatim to osm data in csv format
 Workflow for new csv's:
   • open in spreadsheet software
     · remove enters in cells: search&replace: CTRL-H, Search for: \n, replace with: \\n, MUST use other options: Regular expression
+    · remove completely empty columns
   • save as csv, with TAB as separator
   • run this program
   • open in spreadsheet software
@@ -111,7 +112,8 @@ do
     if [ "$firstline_passed" = "0" ]; then
         header="$line"
         echo $header
-        nr_of_cols=$(echo "$header"| grep -P '\t' -o |wc -l)+1
+        nr_of_cols=$(echo "$header"| grep -P '\t' -o |wc -l)
+        let nr_of_cols=$nr_of_cols+1
         echo "nr_of_cols: $nr_of_cols"
 
         # FIXME if header columns contain space, counters are garbage...
@@ -202,6 +204,16 @@ do
     lat=$(echo "$details_contents"|grep -m 1 "^<place"|grep -o "lat='[0-9.-]*'"|grep -o "[0-9.-]*")
     lon=$(echo "$details_contents"|grep -m 1 "^<place"|grep -o "lon='[0-9.-]*'"|grep -o "[0-9.-]*")
 
+    sum_columns=$nr_of_cols
+    current_cols=$(echo "$csvline" | grep -o '","'|wc -l)
+    missing=0
+    let missing=$sum_columns-$current_cols-1
+    while (( $missing > 0 ))  
+    do
+      csvline="$csvline,"
+      let missing=$missing-1
+    done
+
     new_line="$csvline,$lat,$lon,\"$osm_roadname\""
 
     if [ "$class" = "highway" ]; then 
@@ -218,9 +230,5 @@ do
     fi 
 
 done < "$filename"
-
-# TODO
-# if some lines do not have the according amount of cells (empty?), added cells shift left...
-
 
 exit
