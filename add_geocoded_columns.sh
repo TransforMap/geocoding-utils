@@ -80,6 +80,8 @@ outfile_exact="${filename%%.csv}.exactgeocoded.csv"
 nr_of_lines=$(wc -l "$filename"|cut -f 1 -d" ")
 let percentage=$nr_of_lines/100
 
+email_address="s.8472@aon.at" # use your own, to fulfil Nominatim's usage policy!
+
 ###
 ### working part
 ###
@@ -177,9 +179,10 @@ do
 
     # with postcodes we get less results, omit.
 
-    details_contents=$(wget -q "$nominatim_addr?street=$housenumber$street$city$country$state&format=xml&addressdetails=1&email=s.8472@aon.at" -O - | sed -e 's/></>\n</g')
+    query="$nominatim_addr?street=$housenumber$street$city$country$state&format=xml&addressdetails=1&email=$email_address"
+    echo "Query: „$query“"
+    details_contents=$(wget -q "$query" -O - | sed -e 's/></>\n</g')
     #echo "$details_contents"
-    echo "obj call: street=$housenumber$street$city$country$state"
     length=$(echo "$details_contents"|grep "^<place"|wc -l)
     #echo "$details_contents"|grep "^<place"
     echo "$details_contents"
@@ -224,6 +227,16 @@ do
     else if [ "$class" != "unknown in osm" ]; then
         echo "$new_line,isolated_dwelling" >> "$outfile_exact" # place=isolated_dwelling colors green
     else
+        if [ "$city" ]; then
+          query="$nominatim_addr?q=$city&format=xml&addressdetails=1&email=$email_address&limit=1"
+          details_contents=$(wget -q "$query" -O - | sed -e 's/></>\n</g')
+          class=$(echo "$details_contents"|grep "^<place"|sed -e "s/^.*class='//" -e "s/' type=.*$//" |sort|uniq|sed -e ':a;N;$!ba;s/\n/; /g')
+          if [ "$class" = "place" ]; then #city found
+            lat=$(echo "$details_contents"|grep -m 1 "^<place"|grep -o "lat='[0-9.-]*'"|grep -o "[0-9.-]*")
+            lon=$(echo "$details_contents"|grep -m 1 "^<place"|grep -o "lon='[0-9.-]*'"|grep -o "[0-9.-]*")
+            new_line="$csvline,$lat,$lon,\"$osm_roadname\",continent"
+          fi
+        fi
         echo "$new_line" >> "$outfile_not"
     fi
     fi
