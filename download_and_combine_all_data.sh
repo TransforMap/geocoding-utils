@@ -16,10 +16,11 @@
 if [ ! "$1" ] || [ "$1" = "-h" ] || [ "$1" = " -help" ] || [ "$1" = "--help" ]
 then 
 cat <<EOH
-Usage: $0 [OPTIONS] 
+Usage: $0 [OPTIONS] {input-file.csv}
 
 $0 is a program to download all data from a list of ids from the transformap api and output one geojson file
 
+takes one argument, a csv-file with 2 columns: name,url (of each single dataset)
 
 
 OPTIONS:
